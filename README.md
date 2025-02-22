@@ -1,1 +1,1 @@
-I built a web app that instantly identifies food items from local images and validates them using the Hugging Face AI API. It ensures fast, accurate results by combining local mapping with AI inference, showcasing my skills in front-end development and AI integration.
+I built a web app that instantly identifies food items from local images and validates them using the Hugging Face AI API. It ensures fast, accurate results by combining local mapping with AI inference, by using html,css and javascript showcasing my skills in front-end development and AI integration.

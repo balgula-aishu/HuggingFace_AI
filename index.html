@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hugging Face AI</title>
+  <link rel="stylesheet" href="./index.css" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+</head>
+<body>  
+  <h1>Hugging Face AI</h1>
+  <br />
+  <h2>Select an Image</h2>
+  
+  <select id="imageSelect">
+    <option value="">--Select an Image--</option>
+    <option value="./assets/biryani.jpg">Biryani</option>
+    <option value="./assets/burger.jpg">Burger</option>
+    <option value="./assets/chicken.jpg">Chicken</option>
+    <option value="./assets/pizza.jpg">Pizza</option>
+    <option value="./assets/pasta.jpg">Pasta</option>
+  </select>
+  
+  <br /><br />
+  <img src="#" id="preview" alt="Img" />
+  <h2 id="result"></h2>
+
+  <script>
+    const url = 'https://api-inference.huggingface.co/models/AishuBalgula/food_items';
+    let token;
+
+    document.getElementById("preview").style.display = 'block';
+
+    fetch('./config.json')
+      .then(response => response.json())
+      .then(config => {
+        token = config.token;
+      })
+      .catch(e => console.error("Error loading config:", e));
+      
+    const imageSelect = document.getElementById("imageSelect");
+    const previewImg = document.getElementById("preview");
+    const resultElem = document.getElementById("result");
+
+    imageSelect.addEventListener("change", function(event) {
+      const selectedUrl = event.target.value;
+      if (!selectedUrl){
+        resultElem.innerHTML = "";
+        previewImg.src = "#";
+        return;
+      } 
+      // resultElem.innerHTML = "Loading...";
+      previewImg.src = selectedUrl;
+     
+    //   previewImg.setAttribute("src", selectedUrl);
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.src = selectedUrl;
+      
+      img.onload = function() {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const base64Image = canvas.toDataURL("image/jpeg").split(',')[1];
+    
+        const dataPayload = {
+          inputs: {
+            image: base64Image
+          }
+        };
+        fetch(url, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(dataPayload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("API Response:", data);
+
+            if (data.error) {
+            resultElem.innerHTML = "API Error: " + data.error;
+            return;
+          }
+          let results = data;
+          if (data.predictions) {
+            results = data.predictions;
+          }
+
+          if (!results || !Array.isArray(results)) {
+            resultElem.innerHTML = "Unexpected API response.";
+            return;
+          }
+          let maxScore = 0;
+          let bestLabel = "";
+          data.forEach(item=>{
+            console.log("Item:",item);
+            if(item.score && item.label && item.score > maxScore){
+              maxScore=item.score;
+              bestLabel=item.label;
+            }
+          })
+          if(bestLabel){
+              resultElem.innerHTML = bestLabel;
+          }else{
+            resultElem.innerHTML = "No label found.";
+        
+          }
+      })
+        .catch(e => {
+          console.error("Error calling the API:", e);
+          resultElem.innerHTML = "Error processing image.";
+        });
+      };
+      
+      img.onerror = function() {
+        console.error("Error loading the selected image.");
+        resultElem.innerHTML = "Error loading image.";
+      };
+    });
+  </script>
+</body>
+</html>
